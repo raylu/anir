@@ -67,26 +67,27 @@
 	}
 
 	function parseResults(userName1: string, userName2: string, userEntries: object) {
-		const table = document.querySelector('table');
+		const table : HTMLTableElement = document.querySelector('table.mediaList');
 
 		const user1Entries = userEntries[userName1];
 		const user2Entries = userEntries[userName2];
 		const mediaIds = [];
 		for (const id in user2Entries) {
 			if (user1Entries.hasOwnProperty(id)) {
-				mediaIds.push(id);
 				const user1Score = user1Entries[id];
 				const user2Score = user2Entries[id];
-				const row = table.insertRow();
-				row.insertCell().id = 'img_' + id;
-				row.insertCell().id = 'title_' + id;
-				row.insertCell().innerText = user1Score;
-				row.insertCell().innerText = user2Score;
+				if (user1Score > 0 && user2Score > 0) {
+					mediaIds.push(id);
+					const row = table.insertRow();
+					row.insertCell().id = 'img_' + id;
+					row.insertCell().className = 'title_' + id;
+					row.insertCell().innerText = user1Score;
+					row.insertCell().innerText = user2Score;
+				}
 			}
 		}
 
-		for (let i = 0; i < Math.ceil(mediaIds.length / 50); i++)
-			getNames(mediaIds, i + 1);
+		vectorComparison(mediaIds, user1Entries, user2Entries);
 	}
 
 	function getNames(mediaIds: Array<number>, page: number) {
@@ -106,7 +107,7 @@
 		for (const media of response['Page']['media']) {
 			const title = media['title']['userPreferred'];
 			const img_td = document.querySelector('td#img_' + media['id']);
-			const title_td = document.querySelector('td#title_' + media['id']);
+			const title_tds = document.querySelectorAll('td.title_' + media['id']);
 			const url = 'https://anilist.co/anime/' + media['id'];
 
 			let a = document.createElement('a');
@@ -116,11 +117,66 @@
 			a.appendChild(img);
 			img_td.appendChild(a);
 
-			a = document.createElement('a');
-			a.href = url;
-			a.innerText = title;
-			title_td.appendChild(a);
+			for (const td of title_tds) {
+				a = document.createElement('a');
+				a.href = url;
+				a.innerText = title;
+				td.appendChild(a);
+			}
 		}
+	}
+
+	function vectorComparison(mediaIds: Array<number>, user1Entries: object, user2Entries: object) {
+		// build the top and left columns
+		const rows = [];
+		const table : HTMLTableElement = document.querySelector('table.vectors');
+		const header = table.querySelector('tr');
+		for (const id of mediaIds) {
+			header.insertCell().className = 'title_' + id;
+			const tr = table.insertRow();
+			tr.insertCell().className = 'title_' + id;
+			rows.push(tr);
+		}
+
+		// do the comparisons and build the inner triangle
+		let agree = 0;
+		let disagree = 0;
+		for (let i = 0; i < mediaIds.length; i++) {
+			const id1 = mediaIds[i];
+			const row = rows[i];
+			for (let j = 0; j < i; j++) {
+				const id2 = mediaIds[j];
+				const user1id1Score = user1Entries[id1];
+				const user1id2Score = user1Entries[id2];
+				let user1Vector = 0;
+				if (user1id1Score < user1id2Score)
+					user1Vector = -1;
+				else if (user1id1Score > user1id2Score)
+					user1Vector = 1;
+				let user2Vector = 0;
+				const user2id1Score = user2Entries[id1];
+				const user2id2Score = user2Entries[id2];
+				if (user2id1Score < user2id2Score)
+					user2Vector = -1;
+				else if (user2id1Score > user2id2Score)
+					user2Vector = 1;
+
+				const td = row.insertCell();
+				td.innerText = `${user1Vector}/${user2Vector}`;
+				if (user1Vector == user2Vector) {
+					td.className = 'agree';
+					agree += 1;
+				}
+				else {
+					td.className = 'disagree';
+					disagree += 1;
+				}
+			}
+			(<HTMLSpanElement>document.querySelector('span.compat')).innerText = `${agree} - ${disagree} = ${agree - disagree}`;
+		}
+
+		for (let i = 0; i < Math.ceil(mediaIds.length / 50); i++)
+			getNames(mediaIds, i + 1);
 	}
 
 	const userNames = [null, null];

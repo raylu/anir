@@ -13,3 +13,9 @@ table td {
 	border: 1px solid #111;
 	text-align: center;
 }
+table.vectors td.agree {
+	background-color: #4c8;
+}
+table.vectors td.disagree {
+	background-color: #c44;
+}
