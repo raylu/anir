@@ -1,8 +1,6 @@
 (function() {
-	'use strict';
-
 	const url = 'https://graphql.anilist.co';
-	function query_a(query, variables, cb) {
+	function query_a(query: string, variables: object, cb) {
 		const options = {
 			'method': 'POST',
 			'headers': {
@@ -27,7 +25,7 @@
 		console.error(error);
 	}
 
-	function compareUsers(userName1, userName2) {
+	function compareUsers(userName1: string, userName2: string) {
 		const userEntries = {};
 		const handleMediaList = (response) => {
 			const mediaListCollection = response['MediaListCollection'];
@@ -68,7 +66,7 @@
 		query_a(query, {'name': userName2}, handleMediaList);
 	}
 
-	function parseResults(userName1, userName2, userEntries) {
+	function parseResults(userName1: string, userName2: string, userEntries: object) {
 		const table = document.querySelector('table');
 
 		const user1Entries = userEntries[userName1];
@@ -91,7 +89,7 @@
 			getNames(mediaIds, i + 1);
 	}
 
-	function getNames(mediaIds, page) {
+	function getNames(mediaIds: Array<number>, page: number) {
 		const query = `query ($page: Int, $mediaIds: [Int]) {
 			Page(page: $page, perPage: 50) {
 				media(id_in: $mediaIds) {
@@ -104,7 +102,7 @@
 		query_a(query, {'page': page, 'mediaIds': mediaIds}, handleNames);
 	}
 
-	function handleNames(response) {
+	function handleNames(response: {Page: {media: Array<object>}}) {
 		for (const media of response['Page']['media']) {
 			const title = media['title']['userPreferred'];
 			const img_td = document.querySelector('td#img_' + media['id']);
@@ -136,8 +134,8 @@
 			userNames[1] = username;
 	}
 	if (userNames[0] !== null && userNames[1] !== null) {
-		document.querySelector('form input[name="u1"]').value = userNames[0];
-		document.querySelector('form input[name="u2"]').value = userNames[1];
+		(<HTMLInputElement>document.querySelector('form input[name="u1"]')).value = userNames[0];
+		(<HTMLInputElement>document.querySelector('form input[name="u2"]')).value = userNames[1];
 		compareUsers(userNames[0], userNames[1]);
 	}
 })();
