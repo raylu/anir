@@ -171,8 +171,9 @@
 					disagree += 1;
 				}
 			}
-			(<HTMLSpanElement>document.querySelector('span.compat')).innerText = `${agree} - ${disagree} = ${agree - disagree}`;
 		}
+		(<HTMLDivElement>document.querySelector('div.compat')).innerHTML +=
+			`<span class="agree">${agree} agree</span> - <span class="disagree">${disagree} disagree</span> = ${agree - disagree}`;
 
 		for (let i = 0; i < Math.ceil(mediaIds.length / 50); i++)
 			getNames(mediaIds, i + 1);
