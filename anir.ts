@@ -94,7 +94,7 @@
 			Page(page: $page, perPage: 50) {
 				media(id_in: $mediaIds) {
 					id
-					title { userPreferred }
+					title { english, romaji }
 					coverImage { medium }
 				}
 			}
@@ -104,7 +104,6 @@
 
 	function handleNames(response: {Page: {media: Media[]}}) {
 		for (const media of response['Page']['media']) {
-			const title = media['title']['userPreferred'];
 			const img_td = document.querySelector('td#img_' + media['id']);
 			const title_tds = document.querySelectorAll('td.title_' + media['id']);
 			const url = 'https://anilist.co/anime/' + media['id'];
@@ -119,7 +118,11 @@
 			for (const td of title_tds) {
 				a = document.createElement('a');
 				a.href = url;
-				a.innerText = title;
+				if (media['title']['english']) {
+					a.innerText = media['title']['english'];
+					a.title = media['title']['romaji'];
+				} else
+					a.innerText = media['title']['romaji'];
 				td.appendChild(a);
 			}
 		}
@@ -208,6 +211,6 @@ interface Entries {
 }
 interface Media {
 	id: number;
-	title: {userPreferred: string};
+	title: {english: string, romaji: string};
 	coverImage: {medium: string};
 }
