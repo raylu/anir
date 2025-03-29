@@ -1,6 +1,6 @@
 (function() {
 	const url = 'https://graphql.anilist.co';
-	function query_a(query: string, variables: object, cb) {
+	function query_a(query: string, variables: object, cb: (response: object) => void) {
 		const options = {
 			'method': 'POST',
 			'headers': {
@@ -15,30 +15,30 @@
 		fetch(url, options).then(handleResponse).then(cb).catch(handleError);
 	}
 
-	function handleResponse(response) {
+	function handleResponse(response: Response) {
 		return response.json().then(function (json) {
 			return response.ok ? json['data'] : Promise.reject(json);
 		});
 	}
 
-	function handleError(error) {
+	function handleError(error: any) {
 		console.error(error);
 	}
 
 	function compareUsers(userName1: string, userName2: string) {
-		const userEntries = {};
-		const handleMediaList = (response) => {
+		const userEntries: UserEntries = {};
+		const handleMediaList = (response: {'MediaListCollection': MediaListCollection}) => {
 			const mediaListCollection = response['MediaListCollection'];
 
-			const entries = {};
+			const entries: Entries = {};
 			for (const list of mediaListCollection['lists'])
 				for (const entry of list['entries'])
 					entries[entry['mediaId']] = entry['score'];
 
-			const userName = mediaListCollection['user']['name'];
+			const userName: string = mediaListCollection['user']['name'];
 			userEntries[userName] = entries;
 
-			let th;
+			let th: HTMLTableCellElement;
 			if (userName.toLowerCase() == userName1) {
 				userName1 = userName;
 				th = document.querySelector('th#userName1');
@@ -51,9 +51,8 @@
 			a.innerText = userName;
 			th.appendChild(a);
 
-			if (Object.keys(userEntries).length === 2) {
+			if (Object.keys(userEntries).length === 2)
 				parseResults(userName1, userName2, userEntries);
-			}
 		};
 
 		const query = `query ($name: String) {
@@ -66,7 +65,7 @@
 		query_a(query, {'name': userName2}, handleMediaList);
 	}
 
-	function parseResults(userName1: string, userName2: string, userEntries: object) {
+	function parseResults(userName1: string, userName2: string, userEntries: UserEntries) {
 		const table : HTMLTableElement = document.querySelector('table.mediaList');
 
 		const user1Entries = userEntries[userName1];
@@ -81,8 +80,8 @@
 					const row = table.insertRow();
 					row.insertCell().id = 'img_' + id;
 					row.insertCell().className = 'title_' + id;
-					row.insertCell().innerText = user1Score;
-					row.insertCell().innerText = user2Score;
+					row.insertCell().innerText = String(user1Score);
+					row.insertCell().innerText = String(user2Score);
 				}
 			}
 		}
@@ -90,7 +89,7 @@
 		vectorComparison(mediaIds, user1Entries, user2Entries);
 	}
 
-	function getNames(mediaIds: Array<number>, page: number) {
+	function getNames(mediaIds: number[], page: number) {
 		const query = `query ($page: Int, $mediaIds: [Int]) {
 			Page(page: $page, perPage: 50) {
 				media(id_in: $mediaIds) {
@@ -103,7 +102,7 @@
 		query_a(query, {'page': page, 'mediaIds': mediaIds}, handleNames);
 	}
 
-	function handleNames(response: {Page: {media: Array<object>}}) {
+	function handleNames(response: {Page: {media: Media[]}}) {
 		for (const media of response['Page']['media']) {
 			const title = media['title']['userPreferred'];
 			const img_td = document.querySelector('td#img_' + media['id']);
@@ -126,7 +125,7 @@
 		}
 	}
 
-	function vectorComparison(mediaIds: Array<number>, user1Entries: object, user2Entries: object) {
+	function vectorComparison(mediaIds: number[], user1Entries: Entries, user2Entries: Entries) {
 		// build the top and left columns
 		const rows = [];
 		const table : HTMLTableElement = document.querySelector('table.vectors');
@@ -195,3 +194,19 @@
 		compareUsers(userNames[0], userNames[1]);
 	}
 })();
+
+interface MediaListCollection {
+	lists: Array<{entries: Array<{mediaId: number, score: number}>}>;
+	user: {name: string};
+}
+interface UserEntries {
+	[userName: string]: Entries;
+}
+interface Entries {
+	[mediaId: number]: number;
+}
+interface Media {
+	id: number;
+	title: {userPreferred: string};
+	coverImage: {medium: string};
+}
